@@ -301,11 +301,19 @@ services:
     networks:
       - adopti-net
 
-  # ---- Frontend (React SPA servida por Nginx) ----
+  # ---- Frontend (Next.js 16 SSR) ----
   frontend:
-    build: ../frontend
+    build: ../frontend-ssr
+    env_file:
+      - ../frontend-ssr/.env
+    environment:
+      - NODE_ENV=production
+      - PORT=3000
+      - HOSTNAME=0.0.0.0
+      - PETS_API_URL_INTERNAL=http://gateway/api
+      - CHAT_GRAPHQL_URL_INTERNAL=http://gateway/api/chat/graphql
     ports:
-      - "3000:80"
+      - "3000:3000"
     depends_on:
       gateway:
         condition: service_healthy
