@@ -17,6 +17,7 @@ services:
 
   # ---- Base de datos relacional (pets-service) ----
   postgres:
+    container_name: Adopti_pets-db
     image: postgres:15
     environment:
       POSTGRES_DB: petsdb
@@ -37,6 +38,7 @@ services:
 
   # ---- Base de datos relacional (notification-service) ----
   postgres-notifications:
+    container_name: Adopti_notifications-db
     image: postgres:15
     environment:
       POSTGRES_DB: notificationsdb
@@ -57,6 +59,7 @@ services:
 
   # ---- Message Broker (RabbitMQ) ----
   rabbitmq:
+    container_name: Adopti_broker
     image: rabbitmq:3.13-management
     environment:
       RABBITMQ_DEFAULT_USER: adopti
@@ -77,6 +80,7 @@ services:
 
   # ---- Cache + Async Queue (Redis) ----
   redis:
+    container_name: Adopti_cache-queue
     image: redis:7-alpine
     command: redis-server --appendonly yes
     volumes:
@@ -94,6 +98,7 @@ services:
 
   # ---- Search Engine (Elasticsearch) ----
   elasticsearch:
+    container_name: Adopti_search
     image: docker.elastic.co/elasticsearch/elasticsearch:8.13.4
     environment:
       - discovery.type=single-node
@@ -123,6 +128,7 @@ services:
   # la única fuente de verdad: editar el .env y `docker compose up` ya
   # refleja el cambio.
   pets-service:
+    container_name: Adopti_pets
     build: ../pets-service/pets-service
     env_file:
       - ../pets-service/pets-service/.env
@@ -148,6 +154,7 @@ services:
   # ---- Chat Service (Spring Boot / Java) ----
   # Configuración consolidada en ../chat-service/.env.
   chat-service:
+    container_name: Adopti_chat
     build: ../chat-service
     env_file:
       - ../chat-service/.env
@@ -171,6 +178,7 @@ services:
   # ---- Notification Service (Go) ----
   # Configuración consolidada en ../notification-service/.env.
   notification-service:
+    container_name: Adopti_notifications
     build: ../notification-service
     env_file:
       - ../notification-service/.env
@@ -196,6 +204,7 @@ services:
   # ---- Matching Service (Kotlin / Spring Boot) ----
   # Configuración consolidada en ../matching-service/.env.
   matching-service:
+    container_name: Adopti_matching
     build: ../matching-service
     env_file:
       - ../matching-service/.env
@@ -219,6 +228,7 @@ services:
   # ---- Media Service (Node.js / TypeScript) ----
   # Configuración consolidada en ../media-service/.env.
   media-service:
+    container_name: Adopti_media
     build: ../media-service
     env_file:
       - ../media-service/.env
@@ -249,6 +259,7 @@ services:
 
   # ---- API Gateway (Nginx) ----
   gateway:
+    container_name: Adopti_gateway
     image: nginx:1.27-alpine
     volumes:
       - ../gateway/nginx.conf:/etc/nginx/conf.d/default.conf:ro
@@ -278,6 +289,7 @@ services:
   # ---- Frontend (Next.js 16 SSR) ----
   # Configuración consolidada en ../frontend-ssr/.env.
   frontend:
+    container_name: Adopti_frontend
     build: ../frontend-ssr
     env_file:
       - ../frontend-ssr/.env
