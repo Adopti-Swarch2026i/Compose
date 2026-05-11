@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 set -euo pipefail
-CERT_DIR=/home/blend-pc-juan/Documentos/Proyecto/ArquisoftPrototype2/Adopti/security
+CERT_DIR="$(cd "$(dirname "$0")/../.." && pwd)/security"
 THRESHOLD_DAYS=30
 
 for crt in $(find $CERT_DIR -name '*.crt' ! -name 'ca.crt'); do
