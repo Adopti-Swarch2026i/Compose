@@ -92,7 +92,7 @@ services:
     volumes:
       - rabbitmq-data:/var/lib/rabbitmq
       - ../security/rabbitmq/:/etc/rabbitmq/certs:ro
-      - ../security/rabbitmq/rabbitmq.conf:/etc/rabbitmq/rabbitmq.conf:ro
+      - ./rabbitmq/rabbitmq.conf:/etc/rabbitmq/rabbitmq.conf:ro
     healthcheck:
       test: [ "CMD", "rabbitmq-diagnostics", "ping" ]
       interval: 10s
@@ -201,8 +201,8 @@ services:
     env_file:
       - ../chat-service/.env
     environment:
-      SSL_KEYSTORE_PASSWORD: changeit
-      SSL_TRUSTSTORE_PASSWORD: changeit
+      SSL_KEYSTORE_PASSWORD: ${SSL_KEYSTORE_PASSWORD:?SSL_KEYSTORE_PASSWORD is required}
+      SSL_TRUSTSTORE_PASSWORD: ${SSL_TRUSTSTORE_PASSWORD:?SSL_TRUSTSTORE_PASSWORD is required}
     volumes:
       - ../chat-service/src/main/resources/adoptiswarch-dc4da-firebase-adminsdk-fbsvc-21e2ea6cae.json:/app/firebase-credentials.json:ro
       - ../security/chat-service/keystore.p12:/app/certs/keystore.p12:ro
@@ -264,8 +264,8 @@ services:
     env_file:
       - ../matching-service/.env
     environment:
-      SSL_KEYSTORE_PASSWORD: changeit
-      SSL_TRUSTSTORE_PASSWORD: changeit
+      SSL_KEYSTORE_PASSWORD: ${SSL_KEYSTORE_PASSWORD:?SSL_KEYSTORE_PASSWORD is required}
+      SSL_TRUSTSTORE_PASSWORD: ${SSL_TRUSTSTORE_PASSWORD:?SSL_TRUSTSTORE_PASSWORD is required}
     volumes:
       - ../security/matching-service/keystore.p12:/app/certs/keystore.p12:ro
       - ../security/ca/ca.crt:/app/certs/ca.crt:ro
