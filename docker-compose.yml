@@ -31,12 +31,19 @@ services:
       - ../security/postgres/pets-server.key:/var/lib/postgresql/server.key:ro
       - ../security/postgres/ca.crt:/var/lib/postgresql/ca.crt:ro
     command: >
-      postgres
-      -c ssl=on
-      -c ssl_cert_file=/var/lib/postgresql/server.crt
-      -c ssl_key_file=/var/lib/postgresql/server.key
-      -c ssl_ca_file=/var/lib/postgresql/ca.crt
-      -c ssl_min_protocol_version=TLSv1.2
+      bash -c "
+        cp /var/lib/postgresql/server.crt /tmp/server.crt &&
+        cp /var/lib/postgresql/server.key /tmp/server.key &&
+        cp /var/lib/postgresql/ca.crt /tmp/ca.crt &&
+        chown 999:999 /tmp/server.key &&
+        chmod 600 /tmp/server.key &&
+        exec postgres
+        -c ssl=on
+        -c ssl_cert_file=/tmp/server.crt
+        -c ssl_key_file=/tmp/server.key
+        -c ssl_ca_file=/tmp/ca.crt
+        -c ssl_min_protocol_version=TLSv1.2
+      "
     expose:
       - "5432"
     healthcheck:
@@ -62,12 +69,19 @@ services:
       - ../security/postgres-notifications/notif-server.key:/var/lib/postgresql/server.key:ro
       - ../security/postgres-notifications/ca.crt:/var/lib/postgresql/ca.crt:ro
     command: >
-      postgres
-      -c ssl=on
-      -c ssl_cert_file=/var/lib/postgresql/server.crt
-      -c ssl_key_file=/var/lib/postgresql/server.key
-      -c ssl_ca_file=/var/lib/postgresql/ca.crt
-      -c ssl_min_protocol_version=TLSv1.2
+      bash -c "
+        cp /var/lib/postgresql/server.crt /tmp/server.crt &&
+        cp /var/lib/postgresql/server.key /tmp/server.key &&
+        cp /var/lib/postgresql/ca.crt /tmp/ca.crt &&
+        chown 999:999 /tmp/server.key &&
+        chmod 600 /tmp/server.key &&
+        exec postgres
+        -c ssl=on
+        -c ssl_cert_file=/tmp/server.crt
+        -c ssl_key_file=/tmp/server.key
+        -c ssl_ca_file=/tmp/ca.crt
+        -c ssl_min_protocol_version=TLSv1.2
+      "
     expose:
       - "5432"
     healthcheck:
@@ -133,7 +147,9 @@ services:
       - xpack.security.transport.ssl.truststore.path=/usr/share/elasticsearch/config/certs/elastic-certificates.p12
       - xpack.security.http.ssl.enabled=true
       - xpack.security.http.ssl.keystore.path=/usr/share/elasticsearch/config/certs/elastic-certificates.p12
+      - xpack.security.http.ssl.keystore.password=
       - xpack.security.http.ssl.truststore.path=/usr/share/elasticsearch/config/certs/elastic-certificates.p12
+      - xpack.security.http.ssl.truststore.password=
       - ELASTIC_PASSWORD=${ELASTIC_PASSWORD:?ELASTIC_PASSWORD is required}
       - ES_JAVA_OPTS=-Xms256m -Xmx512m
     volumes:
