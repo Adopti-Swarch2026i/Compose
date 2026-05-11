@@ -119,32 +119,29 @@ assert_rejects_no_client_cert() {
         return 1
     fi
 
+    # Usar -quiet para que openssl muestre alerts TLS (ej: certificate required)
     local result
-    result=$(openssl s_client -connect "$ip:$port" \
-        -CAfile "$CA_FILE" \
-        </dev/null 2>&1)
+    result=$( (sleep 1; echo "GET /health HTTP/1.0"; echo "Host: localhost"; echo ""; sleep 1) | timeout 5 openssl s_client -quiet -connect "$ip:$port" \
+        -CAfile "$CA_FILE" 2>&1)
 
-    # Debe fallar: no hay certificado de cliente
-    local verify_code
-    verify_code=$(echo "$result" | grep "Verify return code" | awk -F': ' '{print $2}' | awk '{print $1}' || echo "")
-
-    if [[ "$verify_code" == "0" ]]; then
-        echo -e "${RED}[FAIL]${NC} [$test_id] Servicio ACEPTO conexion SIN cert cliente: $svc"
-        FAIL=$((FAIL + 1))
-        return 1
+    # Si el servidor requiere cert de cliente, veremos el alert o EOF
+    if echo "$result" | grep -qiE "alert certificate required|certificate required|SSL alert number 116|unexpected eof while reading"; then
+        echo -e "${GREEN}[PASS]${NC} [$test_id] Rechazo sin cert cliente confirmado: $svc"
+        PASS=$((PASS + 1))
+        return 0
     fi
 
-    # Verificar que el rechazo es por certificado
+    # Verificar si el handshake fallo por otro motivo relacionado con cert
     if echo "$result" | grep -qiE "bad certificate|did not return a certificate|unknown ca|handshake failure|alert"; then
         echo -e "${GREEN}[PASS]${NC} [$test_id] Rechazo sin cert cliente confirmado: $svc"
         PASS=$((PASS + 1))
         return 0
-    else
-        # Tambien es valido si simplemente no hay handshake exitoso
-        echo -e "${GREEN}[PASS]${NC} [$test_id] Conexion sin cert rechazada (implicito): $svc"
-        PASS=$((PASS + 1))
-        return 0
     fi
+
+    # Si llegamos aqui, el servidor acepto la conexion (no requiere cert)
+    echo -e "${RED}[FAIL]${NC} [$test_id] Servicio ACEPTO conexion SIN cert cliente: $svc"
+    FAIL=$((FAIL + 1))
+    return 1
 }
 
 assert_tls_version() {
@@ -173,8 +170,10 @@ assert_tls_version() {
         -key "$GATEWAY_KEY" \
         </dev/null 2>&1)
 
-    local verify_code
-    verify_code=$(echo "$result" | grep "Verify return code" | awk -F': ' '{print $2}' | awk '{print $1}' || echo "")
+    # Detectar si el handshake se completo verificando el cipher
+    # Si Cipher is (NONE), el handshake fallo (version TLS no soportada)
+    local cipher
+    cipher=$(echo "$result" | grep "Cipher is" | head -1 || echo "")
 
     local version_name
     case "$version_flag" in
@@ -186,7 +185,7 @@ assert_tls_version() {
     esac
 
     if [[ "$should_work" == "true" ]]; then
-        if [[ "$verify_code" == "0" ]]; then
+        if echo "$cipher" | grep -qv "(NONE)"; then
             echo -e "${GREEN}[PASS]${NC} [$test_id] $version_name ACEPTADO (esperado): $svc"
             PASS=$((PASS + 1))
             return 0
@@ -196,14 +195,14 @@ assert_tls_version() {
             return 1
         fi
     else
-        if [[ "$verify_code" == "0" ]]; then
-            echo -e "${RED}[FAIL]${NC} [$test_id] $version_name ACEPTADO (debia rechazar): $svc"
-            FAIL=$((FAIL + 1))
-            return 1
-        else
+        if echo "$cipher" | grep -q "(NONE)"; then
             echo -e "${GREEN}[PASS]${NC} [$test_id] $version_name RECHAZADO (esperado): $svc"
             PASS=$((PASS + 1))
             return 0
+        else
+            echo -e "${RED}[FAIL]${NC} [$test_id] $version_name ACEPTADO (debia rechazar): $svc"
+            FAIL=$((FAIL + 1))
+            return 1
         fi
     fi
 }
@@ -282,28 +281,27 @@ assert_rejects_fake_ca() {
     openssl x509 -req -in /tmp/fake-svc-csr-$$.csr -CA "$fake_ca" -CAkey "$fake_key" \
         -CAcreateserial -out "$fake_cert" -days 1 2>/dev/null
 
+    # Usar -quiet para detectar alerts TLS (ej: unknown ca)
     local result
-    result=$(openssl s_client -connect "$ip:$port" \
+    result=$( (sleep 1; echo "GET /health HTTP/1.0"; echo "Host: localhost"; echo ""; sleep 1) | timeout 5 openssl s_client -quiet -connect "$ip:$port" \
         -CAfile "$CA_FILE" \
         -cert "$fake_cert" \
-        -key /tmp/fake-svc-key-$$.key \
-        </dev/null 2>&1)
-
-    local verify_code
-    verify_code=$(echo "$result" | grep "Verify return code" | awk -F': ' '{print $2}' | awk '{print $1}' || echo "")
+        -key /tmp/fake-svc-key-$$.key 2>&1)
 
     # Limpiar temp files
     rm -f "$fake_ca" "$fake_key" "$fake_cert" /tmp/fake-svc-key-$$.key /tmp/fake-svc-csr-$$.csr /tmp/fake-ca-$$.srl 2>/dev/null
 
-    if [[ "$verify_code" == "0" ]]; then
-        echo -e "${RED}[FAIL]${NC} [$test_id] Servicio ACEPTO cert de CA falsa: $svc"
-        FAIL=$((FAIL + 1))
-        return 1
-    else
+    # Si el servidor rechaza el cert de CA falsa, veremos el alert o EOF
+    if echo "$result" | grep -qiE "alert unknown ca|unknown ca|alert certificate unknown|handshake failure|unexpected eof while reading"; then
         echo -e "${GREEN}[PASS]${NC} [$test_id] Rechazo con CA falsa confirmado: $svc"
         PASS=$((PASS + 1))
         return 0
     fi
+
+    # Si no hay alert de rechazo, el servidor acepto el cert
+    echo -e "${RED}[FAIL]${NC} [$test_id] Servicio ACEPTO cert de CA falsa: $svc"
+    FAIL=$((FAIL + 1))
+    return 1
 }
 
 assert_service_to_service() {
