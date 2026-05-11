@@ -271,6 +271,7 @@ services:
       - ../gateway/certs:/etc/nginx/certs:ro
     ports:
       - "80:80"
+      - "443:443"
     depends_on:
       pets-service:
         condition: service_healthy
@@ -283,7 +284,7 @@ services:
       media-service:
         condition: service_healthy
     healthcheck:
-      test: [ "CMD", "curl", "-f", "-k", "https://127.0.0.1:80/health" ]
+      test: [ "CMD", "curl", "-f", "-k", "https://127.0.0.1:443/health" ]
       interval: 10s
       timeout: 5s
       retries: 5
