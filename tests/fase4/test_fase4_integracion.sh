@@ -292,6 +292,47 @@ fi
 # ═══════════════════════════════════════════════════════════════════════════
 
 # ---------------------------------------------------------------------------
+# Helper: Hacer request HTTPS a Elasticsearch via openssl s_client
+# Necesario porque curl/wget tienen un bug de compatibilidad TLS con
+# Elasticsearch 8.13.4 (alert illegal parameter 559).
+# ---------------------------------------------------------------------------
+es_request() {
+    local host="$1"
+    local user="$2"
+    local pass="$3"
+    local path="${4:-/}"
+
+    local auth_header=""
+    if [[ -n "${user}" && -n "${pass}" ]]; then
+        local b64
+        b64=$(echo -n "${user}:${pass}" | base64)
+        auth_header="Authorization: Basic ${b64}"
+    fi
+
+    # Construir el script que se ejecutara dentro del contenedor alpine
+    local script
+    script=$(cat <<EOF
+apk add --no-cache openssl >/dev/null 2>&1
+{
+  echo 'GET ${path} HTTP/1.1'
+  echo 'Host: ${host}'
+  ${auth_header:+echo '${auth_header}'}
+  echo 'Connection: close'
+  echo
+} | openssl s_client -connect ${host}:9200 -tls1_3 -quiet 2>/dev/null
+EOF
+)
+
+    docker run --rm --network "${NETWORK}" alpine sh -c "${script}"
+}
+
+# Extrae el status code de una respuesta HTTP cruda
+http_status() {
+    local response="$1"
+    echo "${response}" | grep -E '^HTTP/[0-9.]+' | tail -1 | awk '{print $2}'
+}
+
+# ---------------------------------------------------------------------------
 # TEST-F4-I005: Elasticsearch 401 sin credenciales
 # ---------------------------------------------------------------------------
 section "TEST-F4-I005" "Elasticsearch - Rechazo 401 sin credenciales"
@@ -299,9 +340,8 @@ section "TEST-F4-I005" "Elasticsearch - Rechazo 401 sin credenciales"
 if check_container_running "${ES_CONTAINER}"; then
     subtest "Request HTTPS sin autenticacion"
 
-    RESULT=$(docker run --rm --network "${NETWORK}" curlimages/curl \
-        -s -o /dev/null -w "%{http_code}" \
-        -k "https://${ES_CONTAINER}:9200/" 2>&1)
+    RESPONSE=$(es_request "${ES_CONTAINER}" "" "")
+    RESULT=$(http_status "${RESPONSE}")
 
     if [[ "${RESULT}" == "401" ]]; then
         assert_ok "Elasticsearch retorno 401 Unauthorized sin credenciales"
@@ -312,8 +352,7 @@ if check_container_running "${ES_CONTAINER}"; then
     fi
 
     subtest "Body contiene security_exception o missing authentication"
-    BODY=$(docker run --rm --network "${NETWORK}" curlimages/curl \
-        -s -k "https://${ES_CONTAINER}:9200/" 2>&1)
+    BODY=$(echo "${RESPONSE}" | sed '1,/^[[:space:]]*$/d')
     if echo "${BODY}" | grep -qi "security_exception\|missing authentication\|Unauthorized"; then
         assert_ok "Body contiene mensaje de error de seguridad"
     else
@@ -331,10 +370,8 @@ section "TEST-F4-I006" "Elasticsearch - Acepta 200 con credenciales + HTTPS"
 if check_container_running "${ES_CONTAINER}"; then
     subtest "Request HTTPS con credenciales validas"
 
-    # Primero verificar si tenemos acceso a los certs
-    BODY=$(docker run --rm --network "${NETWORK}" curlimages/curl \
-        -s -k -u "${ES_USER}:${ES_PASS}" \
-        "https://${ES_CONTAINER}:9200/" 2>&1)
+    RESPONSE=$(es_request "${ES_CONTAINER}" "${ES_USER}" "${ES_PASS}")
+    BODY=$(echo "${RESPONSE}" | sed '1,/^[[:space:]]*$/d')
 
     if echo "${BODY}" | grep -q "cluster_name"; then
         assert_ok "Elasticsearch retorno 200 con credenciales + HTTPS"
@@ -352,9 +389,8 @@ if check_container_running "${ES_CONTAINER}"; then
     fi
 
     subtest "Cluster health con credenciales"
-    HEALTH=$(docker run --rm --network "${NETWORK}" curlimages/curl \
-        -s -k -u "${ES_USER}:${ES_PASS}" \
-        "https://${ES_CONTAINER}:9200/_cluster/health" 2>&1)
+    HEALTH_RESPONSE=$(es_request "${ES_CONTAINER}" "${ES_USER}" "${ES_PASS}" "/_cluster/health")
+    HEALTH=$(echo "${HEALTH_RESPONSE}" | sed '1,/^[[:space:]]*$/d')
     if echo "${HEALTH}" | grep -q "cluster_name\|status"; then
         assert_ok "Cluster health accesible con autenticacion HTTPS"
     else

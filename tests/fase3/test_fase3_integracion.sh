@@ -606,15 +606,20 @@ for svc in "${SERVICES[@]}"; do
     svc_score=0
 
     # Test 1: sin cert cliente -> debe fallar
-    result1=$(openssl s_client -connect "$ip:$port" -CAfile "$CA_FILE" </dev/null 2>/dev/null)
-    if ! echo "$result1" | grep -q "Verify return code: 0"; then
+    # Usamos -quiet para capturar alerts TLS (ej: certificate required)
+    result1=$( (sleep 1; echo "GET /health HTTP/1.0"; echo "Host: localhost"; echo ""; sleep 1) | timeout 5 openssl s_client -quiet -connect "$ip:$port" -CAfile "$CA_FILE" 2>&1)
+    # El handshake mTLS falla si: hay alert de cert requerido, cipher es NONE, o hay EOF inesperado
+    if echo "$result1" | grep -qiE "alert certificate required|certificate required|SSL alert number 116|unexpected eof while reading|handshake failure|alert"; then
+        svc_score=$((svc_score + 1))
+    elif echo "$result1" | grep "Cipher is" | head -1 | grep -q "(NONE)"; then
         svc_score=$((svc_score + 1))
     fi
 
     # Test 2: con cert valido -> debe pasar
     result2=$(openssl s_client -connect "$ip:$port" -CAfile "$CA_FILE" \
         -cert "$GATEWAY_CERT" -key "$GATEWAY_KEY" </dev/null 2>/dev/null)
-    if echo "$result2" | grep -q "Verify return code: 0"; then
+    # Handshake exitoso: cipher asignado Y cert del servidor verificado
+    if echo "$result2" | grep -q "Verify return code: 0" && ! echo "$result2" | grep "Cipher is" | head -1 | grep -q "(NONE)"; then
         svc_score=$((svc_score + 1))
     fi
 
@@ -626,9 +631,13 @@ for svc in "${SERVICES[@]}"; do
     openssl req -newkey rsa:2048 -keyout /tmp/score-fake-svc-key-$$.key -out /tmp/score-fake-svc-csr-$$.csr -nodes -subj "/CN=$host" 2>/dev/null
     openssl x509 -req -in /tmp/score-fake-svc-csr-$$.csr -CA "$fake_ca" -CAkey "$fake_key" -CAcreateserial -out "$fake_cert" -days 1 2>/dev/null
 
-    result3=$(openssl s_client -connect "$ip:$port" -CAfile "$CA_FILE" \
-        -cert "$fake_cert" -key /tmp/score-fake-svc-key-$$.key </dev/null 2>/dev/null)
-    if ! echo "$result3" | grep -q "Verify return code: 0"; then
+    # Usamos -quiet para capturar alerts TLS cuando el servidor rechaza el cert falso del cliente
+    result3=$( (sleep 1; echo "GET /health HTTP/1.0"; echo "Host: localhost"; echo ""; sleep 1) | timeout 5 openssl s_client -quiet -connect "$ip:$port" -CAfile "$CA_FILE" \
+        -cert "$fake_cert" -key /tmp/score-fake-svc-key-$$.key 2>&1)
+    # El servidor debe rechazar el cert falso del cliente
+    if echo "$result3" | grep -qiE "alert unknown ca|unknown ca|alert certificate unknown|handshake failure|unexpected eof while reading|alert"; then
+        svc_score=$((svc_score + 1))
+    elif echo "$result3" | grep "Cipher is" | head -1 | grep -q "(NONE)"; then
         svc_score=$((svc_score + 1))
     fi
 

@@ -347,9 +347,16 @@ run_test_invalid_cipher_flood() {
             -cipher "$weak_ciphers" \
             </dev/null 2>/dev/null)
 
-        if echo "$result" | grep -q "Verify return code: 0"; then
-            local cipher
-            cipher=$(echo "$result" | grep "Cipher    :" | awk '{print $3}' || echo "UNKNOWN")
+        local cipher
+        cipher=$(echo "$result" | grep "^\s*Cipher\s*:" | awk '{print $3}' | tr -d '\r\n' || echo "")
+
+        # Si no hay cipher negociado (handshake fallo), es un PASS
+        if [[ -z "$cipher" || "$cipher" == "NONE" || "$cipher" == "0000" ]]; then
+            continue
+        fi
+
+        # Si hay un cipher negociado, verificar si es de los debiles
+        if echo "$weak_ciphers" | grep -q "$cipher"; then
             log_warn "Cipher debil ACEPTADO: $cipher"
             weak_passed=$((weak_passed + 1))
         fi
