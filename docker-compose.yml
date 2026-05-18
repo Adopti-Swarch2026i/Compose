@@ -201,6 +201,8 @@ services:
     volumes:
       - ../chat-service/src/main/resources/adoptiswarch-dc4da-firebase-adminsdk-fbsvc-21e2ea6cae.json:/app/firebase-credentials.json:ro
       - ../security/chat-service/keystore.p12:/app/certs/keystore.p12:ro
+      - ../security/chat-service/chat-service.crt:/app/certs/chat-service.crt:ro
+      - ../security/chat-service/chat-service.key:/app/certs/chat-service.key:ro
       - ../security/ca/ca.crt:/app/certs/ca.crt:ro
       - ../security/ca/truststore.jks:/app/certs/truststore.jks:ro
       - ../security/ca/healthcheck-client.crt:/app/certs/healthcheck-client.crt:ro
@@ -267,6 +269,8 @@ services:
       SSL_TRUSTSTORE_PASSWORD: ${SSL_TRUSTSTORE_PASSWORD:?SSL_TRUSTSTORE_PASSWORD is required}
     volumes:
       - ../security/matching-service/keystore.p12:/app/certs/keystore.p12:ro
+      - ../security/matching-service/matching-service.crt:/app/certs/matching-service.crt:ro
+      - ../security/matching-service/matching-service.key:/app/certs/matching-service.key:ro
       - ../security/ca/ca.crt:/app/certs/ca.crt:ro
       - ../security/ca/truststore.jks:/app/certs/truststore.jks:ro
       - ../security/ca/healthcheck-client.crt:/app/certs/healthcheck-client.crt:ro
@@ -412,10 +416,9 @@ services:
   grafana:
     container_name: Adopti_grafana
     image: grafana/grafana:11.2.0
-    environment:
-      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_PASSWORD:?GRAFANA_PASSWORD is required}
     volumes:
       - grafana-data:/var/lib/grafana
+      - ./grafana.ini:/etc/grafana/grafana.ini:ro
     ports:
       - "3000:3000"
     networks:
