@@ -1,0 +1,47 @@
+═══════════════════════════════════════════════════════════════════════════════
+  Plan P3 — Resultados de Tests
+  Fecha: 2026-05-20 22:15:23
+═══════════════════════════════════════════════════════════════════════════════
+
+1. BASELINE VERIFICATION
+   Estado: ❌ FAILED
+
+2. K6 LOAD TEST — SIN CACHE
+   JSON: /home/juan-blend/Documents/Arquisoft/Adopti/Compose/tests/results/20260520_220451_nocache.json
+   LOG:  /home/juan-blend/Documents/Arquisoft/Adopti/Compose/tests/results/20260520_220451_nocache.log
+
+  Resumen métricas:
+         checks.........................: 100.00% ✓ 34209      ✗ 0    
+       ✓ http_req_duration..............: avg=379ms    min=5.64ms   med=417.84ms max=810.65ms p(90)=530.81ms p(95)=580.55ms
+       ✓ http_req_failed................: 0.00%   ✓ 0          ✗ 34209
+         http_reqs......................: 34209   189.292898/s
+         iteration_duration.............: avg=878.8ms  min=506.07ms med=918.04ms max=1.31s    p(90)=1.02s    p(95)=1.07s   
+
+3. K6 LOAD TEST — CON CACHE
+   JSON: /home/juan-blend/Documents/Arquisoft/Adopti/Compose/tests/results/20260520_220451_cache.json
+   LOG:  /home/juan-blend/Documents/Arquisoft/Adopti/Compose/tests/results/20260520_220451_cache.log
+
+  Resumen métricas:
+         checks.........................: 100.00% ✓ 36582      ✗ 0    
+       ✓ http_req_duration..............: avg=321.87ms min=5.68ms   med=352.86ms max=557.38ms p(90)=428.53ms p(95)=462.24ms
+       ✓ http_req_failed................: 0.00%   ✓ 0          ✗ 36582
+         http_reqs......................: 36582   202.273576/s
+         iteration_duration.............: avg=821.78ms min=506.21ms med=852.97ms max=1.05s    p(90)=926.7ms  p(95)=963.09ms
+
+4. CHAOS TEST (Redis kill)
+   JSON: /home/juan-blend/Documents/Arquisoft/Adopti/Compose/tests/results/20260520_220451_chaos.json
+   LOG:  /home/juan-blend/Documents/Arquisoft/Adopti/Compose/tests/results/20260520_220451_chaos.log
+
+  Resumen métricas:
+         checks.........................: 99.09% ✓ 21248      ✗ 195  
+       ✓ http_req_duration..............: avg=903.74ms min=5.87ms   med=309.54ms max=1m0s     p(90)=581.53ms p(95)=707.84ms
+       ✓ http_req_failed................: 0.90%  ✓ 195        ✗ 21248
+         http_reqs......................: 21443  118.585748/s
+         iteration_duration.............: avg=1.4s     min=506.17ms med=810.44ms max=1m0s     p(90)=1.08s    p(95)=1.2s    
+
+═══════════════════════════════════════════════════════════════════════════════
+  INSTRUCCIONES PARA DOCUMENTO
+═══════════════════════════════════════════════════════════════════════════════
+  Copia los valores numéricos de arriba (p95, p99, avg, error rate)
+  y péguelos en p3_1a.md reemplazando los placeholders [EJECUTAR].
+═══════════════════════════════════════════════════════════════════════════════

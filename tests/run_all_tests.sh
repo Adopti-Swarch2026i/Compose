@@ -155,7 +155,7 @@ K6_NO_CACHE_JSON="$RESULTS_DIR/${TIMESTAMP}_nocache.json"
 K6_NO_CACHE_LOG="$RESULTS_DIR/${TIMESTAMP}_nocache.log"
 
 set +e
-$K6_BIN run --insecure-skip-tls-verify --out "json=$K6_NO_CACHE_JSON" "$SCRIPT_DIR/perf/pets_load_test.js" | tee "$K6_NO_CACHE_LOG"
+PERF_PROFILE=nocache $K6_BIN run --insecure-skip-tls-verify --out "json=$K6_NO_CACHE_JSON" "$SCRIPT_DIR/perf/pets_load_test.js" | tee "$K6_NO_CACHE_LOG"
 set -e
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -172,7 +172,7 @@ K6_CACHE_JSON="$RESULTS_DIR/${TIMESTAMP}_cache.json"
 K6_CACHE_LOG="$RESULTS_DIR/${TIMESTAMP}_cache.log"
 
 set +e
-$K6_BIN run --insecure-skip-tls-verify --out "json=$K6_CACHE_JSON" "$SCRIPT_DIR/perf/pets_load_test.js" | tee "$K6_CACHE_LOG"
+PERF_PROFILE=cache $K6_BIN run --insecure-skip-tls-verify --out "json=$K6_CACHE_JSON" "$SCRIPT_DIR/perf/pets_load_test.js" | tee "$K6_CACHE_LOG"
 set -e
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -188,7 +188,7 @@ K6_CHAOS_LOG="$RESULTS_DIR/${TIMESTAMP}_chaos.log"
 
 echo "[chaos] Iniciando k6 en background ..."
 set +e
-$K6_BIN run --insecure-skip-tls-verify --out "json=$K6_CHAOS_JSON" "$SCRIPT_DIR/perf/pets_load_test.js" > "$K6_CHAOS_LOG" 2>&1 &
+PERF_PROFILE=chaos $K6_BIN run --insecure-skip-tls-verify --out "json=$K6_CHAOS_JSON" "$SCRIPT_DIR/perf/pets_load_test.js" > "$K6_CHAOS_LOG" 2>&1 &
 K6_PID=$!
 
 echo "[chaos] Warming up 30s ..."

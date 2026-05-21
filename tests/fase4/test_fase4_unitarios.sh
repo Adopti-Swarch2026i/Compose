@@ -78,6 +78,8 @@ check_container() {
 PROJECT_ROOT=".."
 SECURITY_DIR="${PROJECT_ROOT}/security"
 COMPOSE_FILE="docker-compose.yml"
+POSTGRES_ENTRYPOINT="./postgres-entrypoint.sh"
+POSTGRES_INIT_SSL="./postgres-init-ssl.sh"
 
 # =============================================================================
 # INICIO DE TESTS
@@ -260,36 +262,68 @@ if [[ -f "${RABBITMQ_CONF}" ]]; then
 fi
 
 # ---------------------------------------------------------------------------
-# 5. docker-compose.yml - ssl=on para PostgreSQL
+# 5. PostgreSQL - SSL habilitado por entrypoint real
 # ---------------------------------------------------------------------------
-section "TEST-F4-U003" "Validacion de docker-compose - PostgreSQL SSL habilitado"
+section "TEST-F4-U003" "Validacion de PostgreSQL SSL habilitado"
 
-subtest "postgres (pets-db) tiene ssl=on"
-if grep -A 35 "^  postgres:" "${COMPOSE_FILE}" | grep -q "ssl=on"; then
-    assert_ok "pets-db: ssl=on encontrado en command"
+subtest "postgres-entrypoint.sh existe"
+if [[ -f "${POSTGRES_ENTRYPOINT}" ]]; then
+    assert_ok "postgres-entrypoint.sh encontrado en Compose/"
 else
-    assert_fail "pets-db: ssl=on NO encontrado en docker-compose.yml"
+    assert_fail "postgres-entrypoint.sh NO encontrado en Compose/"
 fi
 
-subtest "postgres-notifications tiene ssl=on"
-if grep -A 35 "^  postgres-notifications:" "${COMPOSE_FILE}" | grep -q "ssl=on"; then
-    assert_ok "notifications-db: ssl=on encontrado en command"
-else
-    assert_fail "notifications-db: ssl=on NO encontrado en docker-compose.yml"
+if [[ -f "${POSTGRES_ENTRYPOINT}" ]]; then
+    subtest "entrypoint arranca PostgreSQL con ssl=on"
+    if grep -q -- "-c ssl=on" "${POSTGRES_ENTRYPOINT}"; then
+        assert_ok "ssl=on configurado en postgres-entrypoint.sh"
+    else
+        assert_fail "ssl=on NO encontrado en postgres-entrypoint.sh"
+    fi
+
+    subtest "entrypoint configura ssl_min_protocol_version=TLSv1.2"
+    if grep -q -- "-c ssl_min_protocol_version=TLSv1.2" "${POSTGRES_ENTRYPOINT}"; then
+        assert_ok "ssl_min_protocol_version=TLSv1.2 configurado en postgres-entrypoint.sh"
+    else
+        assert_fail "ssl_min_protocol_version=TLSv1.2 NO configurado en postgres-entrypoint.sh"
+    fi
+
+    subtest "entrypoint usa certificado, llave y CA"
+    if grep -q -- "-c ssl_cert_file=" "${POSTGRES_ENTRYPOINT}" \
+        && grep -q -- "-c ssl_key_file=" "${POSTGRES_ENTRYPOINT}" \
+        && grep -q -- "-c ssl_ca_file=" "${POSTGRES_ENTRYPOINT}"; then
+        assert_ok "ssl_cert_file, ssl_key_file y ssl_ca_file configurados"
+    else
+        assert_fail "Falta ssl_cert_file, ssl_key_file o ssl_ca_file en postgres-entrypoint.sh"
+    fi
 fi
 
-subtest "postgres (pets-db) tiene ssl_min_protocol_version=TLSv1.2"
-if grep -A 35 "^  postgres:" "${COMPOSE_FILE}" | grep -q "ssl_min_protocol_version"; then
-    assert_ok "pets-db: ssl_min_protocol_version configurado"
+subtest "postgres-init-ssl.sh fuerza hostssl y rechaza hostnossl"
+if [[ -f "${POSTGRES_INIT_SSL}" ]]; then
+    if grep -q "hostssl all all" "${POSTGRES_INIT_SSL}" \
+        && grep -q "hostnossl all all all reject" "${POSTGRES_INIT_SSL}"; then
+        assert_ok "pg_hba.conf queda restringido a SSL"
+    else
+        assert_fail "postgres-init-ssl.sh no fuerza hostssl/hostnossl reject"
+    fi
 else
-    assert_fail "pets-db: ssl_min_protocol_version NO configurado"
+    assert_fail "postgres-init-ssl.sh NO encontrado en Compose/"
 fi
 
-subtest "postgres-notifications tiene ssl_min_protocol_version=TLSv1.2"
-if grep -A 35 "^  postgres-notifications:" "${COMPOSE_FILE}" | grep -q "ssl_min_protocol_version"; then
-    assert_ok "notifications-db: ssl_min_protocol_version configurado"
+subtest "postgres (pets-db) monta entrypoint e init SSL"
+if grep -A 50 "^  postgres:" "${COMPOSE_FILE}" | grep -q "./postgres-entrypoint.sh:/postgres-entrypoint.sh:ro" \
+    && grep -A 50 "^  postgres:" "${COMPOSE_FILE}" | grep -q "./postgres-init-ssl.sh:/docker-entrypoint-initdb.d/01-ssl.sh:ro"; then
+    assert_ok "pets-db monta postgres-entrypoint.sh y postgres-init-ssl.sh"
 else
-    assert_fail "notifications-db: ssl_min_protocol_version NO configurado"
+    assert_fail "pets-db no monta entrypoint/init SSL esperados"
+fi
+
+subtest "postgres-notifications monta entrypoint e init SSL"
+if grep -A 50 "^  postgres-notifications:" "${COMPOSE_FILE}" | grep -q "./postgres-entrypoint.sh:/postgres-entrypoint.sh:ro" \
+    && grep -A 50 "^  postgres-notifications:" "${COMPOSE_FILE}" | grep -q "./postgres-init-ssl.sh:/docker-entrypoint-initdb.d/01-ssl.sh:ro"; then
+    assert_ok "notifications-db monta postgres-entrypoint.sh y postgres-init-ssl.sh"
+else
+    assert_fail "notifications-db no monta entrypoint/init SSL esperados"
 fi
 
 # ---------------------------------------------------------------------------

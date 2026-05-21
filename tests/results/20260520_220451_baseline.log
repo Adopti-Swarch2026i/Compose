@@ -1,0 +1,25 @@
+=== P3 Baseline Verification ===
+[1/6] Verificando 4 redes Docker...
+  ✓ 4 redes encontradas
+[2/6] Verificando rate limiting en nginx.conf...
+  ✓ zonas api_general, api_write y conn_per_ip configuradas
+  ✓ location = /api/chat/graphql tiene limit_req activo
+  ✓ location /api/chat/ tiene limit_req activo
+  ✓ location /api/notifications tiene limit_req activo
+  ✓ location /api/matches tiene limit_req activo
+  ✓ location /api/search tiene limit_req activo
+  ✓ location /api/media tiene limit_req activo
+  ✓ location /api/chat/ws tiene limit_req activo
+  ✓ location /api/pets sin limit_req activo (excepcion para performance P3)
+[3/6] Verificando puertos públicos...
+  ✓ Solo gateway tiene puertos públicos
+[4/6] Verificando aislamiento de redes...
+  ✓ Frontend no puede resolver postgres (aislamiento correcto)
+[5/6] Verificando gateway -> frontend...
+  ✗ https://localhost/ responde 502 (esperado 200)
+[6/6] Verificando HTTP 429 en endpoint con rate limiting...
+         33 200
+         17 429
+  ✓ /api/search rechaza rafagas con HTTP 429
+
+=== ❌ 1 VERIFICACIONES FALLARON ===
