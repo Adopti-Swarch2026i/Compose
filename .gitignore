@@ -1,0 +1,4 @@
+.env
+
+# k6 raw JSON outputs (multi-MB, regenerated on every run)
+tests/results/*.json
