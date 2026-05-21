@@ -39,7 +39,8 @@ export const options = {
 };
 
 export default function () {
-  const url = 'https://localhost/api/pets?page=1&page_size=20';
+  const baseUrl = __ENV.GATEWAY_BASE_URL || 'https://localhost';
+  const url = `${baseUrl}/api/pets?page=1&page_size=20`;
   const res = http.get(url, { tags: { name: 'list_pets' } });
   check(res, { 'status 200': (r) => r.status === 200 });
   sleep(thinkTime);

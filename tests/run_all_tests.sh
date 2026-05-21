@@ -85,19 +85,31 @@ wait_for_gateway_health() {
     local sleep_seconds="${2:-5}"
     local attempt=1
 
-    echo "[infra] Verificando https://localhost/health ..."
+    echo "[infra] Verificando gateway (intenta HTTPS primero, luego HTTP) ..."
     while [ "$attempt" -le "$max_attempts" ]; do
         if curl -sfk https://localhost/health >/dev/null 2>&1; then
-            echo -e "${GREEN}[infra] Gateway responde OK.${NC}"
+            export GATEWAY_BASE_URL="https://localhost"
+            export GATEWAY_SCHEME="https"
+            echo -e "${GREEN}[infra] Gateway responde OK en HTTPS (modo P3/main).${NC}"
+            return 0
+        fi
+        if curl -sf http://localhost/health >/dev/null 2>&1; then
+            export GATEWAY_BASE_URL="http://localhost"
+            export GATEWAY_SCHEME="http"
+            echo -e "${YELLOW}[VULN-V2] Gateway responde SOLO HTTP — TLS/Secure Channel NO está activo.${NC}"
+            echo -e "${YELLOW}[VULN-V2] Esta es la vulnerabilidad que la versión main (P3) corrigió:${NC}"
+            echo -e "${YELLOW}          - Tráfico cliente↔gateway viaja en texto plano (susceptible a MITM/sniffing).${NC}"
+            echo -e "${YELLOW}          - Pattern aplicado en main: Secure Channel (TLS 1.2/1.3 en 443, mTLS interno).${NC}"
+            echo -e "${YELLOW}[infra] Continuando suite con BASE_URL=http://localhost para exponer el resto de gaps.${NC}"
             return 0
         fi
 
-        echo "[infra] Intento ${attempt}/${max_attempts}: gateway aun no responde. Reintentando en ${sleep_seconds}s ..."
+        echo "[infra] Intento ${attempt}/${max_attempts}: gateway aun no responde (ni HTTPS ni HTTP). Reintentando en ${sleep_seconds}s ..."
         sleep "$sleep_seconds"
         attempt=$((attempt + 1))
     done
 
-    echo -e "${RED}[error] Gateway no responde en https://localhost/health${NC}"
+    echo -e "${RED}[error] Gateway no responde ni en HTTPS ni en HTTP.${NC}"
     echo "        Revisa: docker compose logs -f gateway"
     return 1
 }
@@ -155,7 +167,7 @@ K6_NO_CACHE_JSON="$RESULTS_DIR/${TIMESTAMP}_nocache.json"
 K6_NO_CACHE_LOG="$RESULTS_DIR/${TIMESTAMP}_nocache.log"
 
 set +e
-PERF_PROFILE=nocache $K6_BIN run --insecure-skip-tls-verify --out "json=$K6_NO_CACHE_JSON" "$SCRIPT_DIR/perf/pets_load_test.js" | tee "$K6_NO_CACHE_LOG"
+PERF_PROFILE=nocache $K6_BIN run --insecure-skip-tls-verify --env "GATEWAY_BASE_URL=${GATEWAY_BASE_URL:-https://localhost}" --out "json=$K6_NO_CACHE_JSON" "$SCRIPT_DIR/perf/pets_load_test.js" | tee "$K6_NO_CACHE_LOG"
 set -e
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -172,7 +184,7 @@ K6_CACHE_JSON="$RESULTS_DIR/${TIMESTAMP}_cache.json"
 K6_CACHE_LOG="$RESULTS_DIR/${TIMESTAMP}_cache.log"
 
 set +e
-PERF_PROFILE=cache $K6_BIN run --insecure-skip-tls-verify --out "json=$K6_CACHE_JSON" "$SCRIPT_DIR/perf/pets_load_test.js" | tee "$K6_CACHE_LOG"
+PERF_PROFILE=cache $K6_BIN run --insecure-skip-tls-verify --env "GATEWAY_BASE_URL=${GATEWAY_BASE_URL:-https://localhost}" --out "json=$K6_CACHE_JSON" "$SCRIPT_DIR/perf/pets_load_test.js" | tee "$K6_CACHE_LOG"
 set -e
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -188,7 +200,7 @@ K6_CHAOS_LOG="$RESULTS_DIR/${TIMESTAMP}_chaos.log"
 
 echo "[chaos] Iniciando k6 en background ..."
 set +e
-PERF_PROFILE=chaos $K6_BIN run --insecure-skip-tls-verify --out "json=$K6_CHAOS_JSON" "$SCRIPT_DIR/perf/pets_load_test.js" > "$K6_CHAOS_LOG" 2>&1 &
+PERF_PROFILE=chaos $K6_BIN run --insecure-skip-tls-verify --env "GATEWAY_BASE_URL=${GATEWAY_BASE_URL:-https://localhost}" --out "json=$K6_CHAOS_JSON" "$SCRIPT_DIR/perf/pets_load_test.js" > "$K6_CHAOS_LOG" 2>&1 &
 K6_PID=$!
 
 echo "[chaos] Warming up 30s ..."
@@ -221,6 +233,12 @@ echo -e "${CYAN}==========================================${NC}"
     echo "═══════════════════════════════════════════════════════════════════════════════"
     echo "  Plan P3 — Resultados de Tests"
     echo "  Fecha: $(date '+%Y-%m-%d %H:%M:%S')"
+    echo "  Modo:  ${GATEWAY_SCHEME:-?} (BASE_URL=${GATEWAY_BASE_URL:-?})"
+    if [ "${GATEWAY_SCHEME:-}" = "http" ]; then
+        echo "  >> Ejecución en rama V2 (P2 baseline). Los FAILs documentan las"
+        echo "     vulnerabilidades que la rama main (P3) corrige: Secure Channel,"
+        echo "     Network Segmentation, Reverse Proxy y Rate Limiting."
+    fi
     echo "═══════════════════════════════════════════════════════════════════════════════"
     echo ""
     echo "1. BASELINE VERIFICATION"
