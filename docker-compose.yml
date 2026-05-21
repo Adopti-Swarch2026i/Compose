@@ -1,6 +1,14 @@
 networks:
-  adopti-net:
+  frontend-net:
     driver: bridge
+  backend-net:
+    driver: bridge
+  data-net:
+    driver: bridge
+    internal: true
+  broker-net:
+    driver: bridge
+    internal: true
 
 volumes:
   postgres-data:
@@ -42,7 +50,7 @@ services:
       retries: 10
     restart: unless-stopped
     networks:
-      - adopti-net
+      - data-net
 
   # ---- Base de datos relacional (notification-service) ----
   postgres-notifications:
@@ -69,7 +77,7 @@ services:
       retries: 10
     restart: unless-stopped
     networks:
-      - adopti-net
+      - data-net
 
   # ---- Message Broker (RabbitMQ) ----
   rabbitmq:
@@ -92,7 +100,7 @@ services:
       retries: 10
     restart: unless-stopped
     networks:
-      - adopti-net
+      - broker-net
 
   # ---- Cache + Async Queue (Redis) ----
   redis:
@@ -110,7 +118,7 @@ services:
       retries: 5
     restart: unless-stopped
     networks:
-      - adopti-net
+      - data-net
 
   # ---- Search Engine (Elasticsearch) ----
   elasticsearch:
@@ -144,7 +152,7 @@ services:
       start_period: 30s
     restart: unless-stopped
     networks:
-      - adopti-net
+      - data-net
 
   # ──────────────────────────────────────────────────────────────────────────
   # SERVICIOS LÓGICOS
@@ -186,7 +194,9 @@ services:
       start_period: 15s
     restart: unless-stopped
     networks:
-      - adopti-net
+      - backend-net
+      - data-net
+      - broker-net
 
   # ---- Chat Service (Spring Boot / Java) ----
   # Configuración consolidada en ../chat-service/.env.
@@ -220,7 +230,8 @@ services:
       start_period: 40s
     restart: unless-stopped
     networks:
-      - adopti-net
+      - backend-net
+      - broker-net
 
   # ---- Notification Service (Go) ----
   # Configuración consolidada en ../notification-service/.env.
@@ -255,7 +266,9 @@ services:
       start_period: 15s
     restart: unless-stopped
     networks:
-      - adopti-net
+      - backend-net
+      - data-net
+      - broker-net
 
   # ---- Matching Service (Kotlin / Spring Boot) ----
   # Configuración consolidada en ../matching-service/.env.
@@ -290,7 +303,9 @@ services:
       start_period: 60s
     restart: unless-stopped
     networks:
-      - adopti-net
+      - backend-net
+      - data-net
+      - broker-net
 
   # ---- Media Service (Node.js / TypeScript) ----
   # Configuración consolidada en ../media-service/.env.
@@ -327,7 +342,9 @@ services:
       start_period: 20s
     restart: unless-stopped
     networks:
-      - adopti-net
+      - backend-net
+      - data-net
+      - broker-net
 
   # ──────────────────────────────────────────────────────────────────────────
   # PRESENTACIÓN Y GATEWAY
@@ -340,6 +357,9 @@ services:
     volumes:
       - ../gateway/nginx.conf:/etc/nginx/conf.d/default.conf:ro
       - ../gateway/certs:/etc/nginx/certs:ro
+      - ../gateway/htpasswd:/etc/nginx/htpasswd:ro
+      - ../security/ca/healthcheck-client.crt:/etc/nginx/client-certs/client.crt:ro
+      - ../security/ca/healthcheck-client.key:/etc/nginx/client-certs/client.key:ro
     ports:
       - "80:80"
       - "443:443"
@@ -362,7 +382,8 @@ services:
       start_period: 5s
     restart: unless-stopped
     networks:
-      - adopti-net
+      - frontend-net
+      - backend-net
 
   # ---- Frontend (Next.js 16 SSR) ----
   # Configuración consolidada en ../frontend-ssr/.env.
@@ -384,7 +405,7 @@ services:
       start_period: 30s
     restart: unless-stopped
     networks:
-      - adopti-net
+      - frontend-net
 
   # ──────────────────────────────────────────────────────────────────────────
   # MONITOREO
@@ -395,12 +416,12 @@ services:
     image: nginx/nginx-prometheus-exporter:1.3
     command:
       - -nginx.scrape-uri=http://gateway/nginx_status
-    ports:
-      - "9113:9113"
+    expose:
+      - "9113"
     depends_on:
       - gateway
     networks:
-      - adopti-net
+      - backend-net
 
   prometheus:
     container_name: Adopti_prometheus
@@ -408,10 +429,10 @@ services:
     volumes:
       - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml:ro
       - prometheus-data:/prometheus
-    ports:
-      - "9090:9090"
+    expose:
+      - "9090"
     networks:
-      - adopti-net
+      - backend-net
 
   grafana:
     container_name: Adopti_grafana
@@ -419,7 +440,7 @@ services:
     volumes:
       - grafana-data:/var/lib/grafana
       - ./grafana.ini:/etc/grafana/grafana.ini:ro
-    ports:
-      - "3000:3000"
+    expose:
+      - "3000"
     networks:
-      - adopti-net
+      - backend-net
