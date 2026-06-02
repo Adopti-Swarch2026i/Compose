@@ -160,13 +160,79 @@ services:
   # SERVICIOS LÓGICOS
   # ──────────────────────────────────────────────────────────────────────────
 
-  # ---- Pets Service (FastAPI / Python) ----
-  # Toda la configuración vive en ../pets-service/pets-service/.env
-  # (env_file). El bloque `environment:` se eliminó para que el .env sea
-  # la única fuente de verdad: editar el .env y `docker compose up` ya
-  # refleja el cambio.
-  pets-service:
-    container_name: Adopti_pets
+  # ---- Pets Service (FastAPI / Python) — 3 replicas ----
+  pets-service-1:
+    container_name: Adopti_pets_1
+    build: ../pets-service/pets-service
+    env_file:
+      - ../pets-service/pets-service/.env
+    environment:
+      TLS_CERT_PATH: /app/certs/server.crt
+      TLS_KEY_PATH: /app/certs/server.key
+      TLS_CA_PATH: /app/certs/ca.crt
+    volumes:
+      - ../pets-service/firebase-config:/firebase-config
+      - ../security/pets-service/pets-service.crt:/app/certs/server.crt:ro
+      - ../security/pets-service/pets-service.key:/app/certs/server.key:ro
+      - ../security/ca/ca.crt:/app/certs/ca.crt:ro
+      - ../security/ca/healthcheck-client.crt:/app/certs/healthcheck-client.crt:ro
+      - ../security/ca/healthcheck-client.key:/app/certs/healthcheck-client.key:ro
+    expose:
+      - "8443"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    healthcheck:
+      test: [ "CMD-SHELL", "curl -fk --cert /app/certs/healthcheck-client.crt --key /app/certs/healthcheck-client.key https://localhost:8443/health || exit 1" ]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 15s
+    restart: unless-stopped
+    networks:
+      - backend-net
+      - data-net
+      - broker-net
+
+  pets-service-2:
+    container_name: Adopti_pets_2
+    build: ../pets-service/pets-service
+    env_file:
+      - ../pets-service/pets-service/.env
+    environment:
+      TLS_CERT_PATH: /app/certs/server.crt
+      TLS_KEY_PATH: /app/certs/server.key
+      TLS_CA_PATH: /app/certs/ca.crt
+    volumes:
+      - ../pets-service/firebase-config:/firebase-config
+      - ../security/pets-service/pets-service.crt:/app/certs/server.crt:ro
+      - ../security/pets-service/pets-service.key:/app/certs/server.key:ro
+      - ../security/ca/ca.crt:/app/certs/ca.crt:ro
+      - ../security/ca/healthcheck-client.crt:/app/certs/healthcheck-client.crt:ro
+      - ../security/ca/healthcheck-client.key:/app/certs/healthcheck-client.key:ro
+    expose:
+      - "8443"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    healthcheck:
+      test: [ "CMD-SHELL", "curl -fk --cert /app/certs/healthcheck-client.crt --key /app/certs/healthcheck-client.key https://localhost:8443/health || exit 1" ]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 15s
+    restart: unless-stopped
+    networks:
+      - backend-net
+      - data-net
+      - broker-net
+
+  pets-service-3:
+    container_name: Adopti_pets_3
     build: ../pets-service/pets-service
     env_file:
       - ../pets-service/pets-service/.env
@@ -235,10 +301,9 @@ services:
       - backend-net
       - broker-net
 
-  # ---- Notification Service (Go) ----
-  # Configuración consolidada en ../notification-service/.env.
-  notification-service:
-    container_name: Adopti_notifications
+  # ---- Notification Service (Go) — 3 replicas ----
+  notification-service-1:
+    container_name: Adopti_notifications_1
     build: ../notification-service
     env_file:
       - ../notification-service/.env
@@ -272,10 +337,149 @@ services:
       - data-net
       - broker-net
 
-  # ---- Matching Service (Kotlin / Spring Boot) ----
-  # Configuración consolidada en ../matching-service/.env.
-  matching-service:
-    container_name: Adopti_matching
+  notification-service-2:
+    container_name: Adopti_notifications_2
+    build: ../notification-service
+    env_file:
+      - ../notification-service/.env
+    environment:
+      TLS_CERT_PATH: /app/certs/server.crt
+      TLS_KEY_PATH: /app/certs/server.key
+      TLS_CA_PATH: /app/certs/ca.crt
+    volumes:
+      - ../notification-service/firebase-credentials.json:/app/firebase-credentials.json:ro
+      - ../security/notification-service/notification-service.crt:/app/certs/server.crt:ro
+      - ../security/notification-service/notification-service.key:/app/certs/server.key:ro
+      - ../security/ca/ca.crt:/app/certs/ca.crt:ro
+      - ../security/ca/healthcheck-client.crt:/app/certs/healthcheck-client.crt:ro
+      - ../security/ca/healthcheck-client.key:/app/certs/healthcheck-client.key:ro
+    expose:
+      - "8443"
+    depends_on:
+      postgres-notifications:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    healthcheck:
+      test: [ "CMD-SHELL", "curl -fk --cert /app/certs/healthcheck-client.crt --key /app/certs/healthcheck-client.key https://127.0.0.1:8443/health || exit 1" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
+    restart: unless-stopped
+    networks:
+      - backend-net
+      - data-net
+      - broker-net
+
+  notification-service-3:
+    container_name: Adopti_notifications_3
+    build: ../notification-service
+    env_file:
+      - ../notification-service/.env
+    environment:
+      TLS_CERT_PATH: /app/certs/server.crt
+      TLS_KEY_PATH: /app/certs/server.key
+      TLS_CA_PATH: /app/certs/ca.crt
+    volumes:
+      - ../notification-service/firebase-credentials.json:/app/firebase-credentials.json:ro
+      - ../security/notification-service/notification-service.crt:/app/certs/server.crt:ro
+      - ../security/notification-service/notification-service.key:/app/certs/server.key:ro
+      - ../security/ca/ca.crt:/app/certs/ca.crt:ro
+      - ../security/ca/healthcheck-client.crt:/app/certs/healthcheck-client.crt:ro
+      - ../security/ca/healthcheck-client.key:/app/certs/healthcheck-client.key:ro
+    expose:
+      - "8443"
+    depends_on:
+      postgres-notifications:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    healthcheck:
+      test: [ "CMD-SHELL", "curl -fk --cert /app/certs/healthcheck-client.crt --key /app/certs/healthcheck-client.key https://127.0.0.1:8443/health || exit 1" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
+    restart: unless-stopped
+    networks:
+      - backend-net
+      - data-net
+      - broker-net
+
+  # ---- Matching Service (Kotlin / Spring Boot) — 3 replicas ----
+  matching-service-1:
+    container_name: Adopti_matching_1
+    build: ../matching-service
+    env_file:
+      - ../matching-service/.env
+    environment:
+      SSL_KEYSTORE_PASSWORD: ${SSL_KEYSTORE_PASSWORD:?SSL_KEYSTORE_PASSWORD is required}
+      SSL_TRUSTSTORE_PASSWORD: ${SSL_TRUSTSTORE_PASSWORD:?SSL_TRUSTSTORE_PASSWORD is required}
+    volumes:
+      - ../security/matching-service/keystore.p12:/app/certs/keystore.p12:ro
+      - ../security/matching-service/matching-service.crt:/app/certs/matching-service.crt:ro
+      - ../security/matching-service/matching-service.key:/app/certs/matching-service.key:ro
+      - ../security/ca/ca.crt:/app/certs/ca.crt:ro
+      - ../security/ca/truststore.jks:/app/certs/truststore.jks:ro
+      - ../security/ca/healthcheck-client.crt:/app/certs/healthcheck-client.crt:ro
+      - ../security/ca/healthcheck-client.key:/app/certs/healthcheck-client.key:ro
+    expose:
+      - "8443"
+    depends_on:
+      elasticsearch:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    healthcheck:
+      test: [ "CMD-SHELL", "curl -fk --cert /app/certs/healthcheck-client.crt --key /app/certs/healthcheck-client.key https://localhost:8443/health || exit 1" ]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 60s
+    restart: unless-stopped
+    networks:
+      - backend-net
+      - data-net
+      - broker-net
+
+  matching-service-2:
+    container_name: Adopti_matching_2
+    build: ../matching-service
+    env_file:
+      - ../matching-service/.env
+    environment:
+      SSL_KEYSTORE_PASSWORD: ${SSL_KEYSTORE_PASSWORD:?SSL_KEYSTORE_PASSWORD is required}
+      SSL_TRUSTSTORE_PASSWORD: ${SSL_TRUSTSTORE_PASSWORD:?SSL_TRUSTSTORE_PASSWORD is required}
+    volumes:
+      - ../security/matching-service/keystore.p12:/app/certs/keystore.p12:ro
+      - ../security/matching-service/matching-service.crt:/app/certs/matching-service.crt:ro
+      - ../security/matching-service/matching-service.key:/app/certs/matching-service.key:ro
+      - ../security/ca/ca.crt:/app/certs/ca.crt:ro
+      - ../security/ca/truststore.jks:/app/certs/truststore.jks:ro
+      - ../security/ca/healthcheck-client.crt:/app/certs/healthcheck-client.crt:ro
+      - ../security/ca/healthcheck-client.key:/app/certs/healthcheck-client.key:ro
+    expose:
+      - "8443"
+    depends_on:
+      elasticsearch:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    healthcheck:
+      test: [ "CMD-SHELL", "curl -fk --cert /app/certs/healthcheck-client.crt --key /app/certs/healthcheck-client.key https://localhost:8443/health || exit 1" ]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 60s
+    restart: unless-stopped
+    networks:
+      - backend-net
+      - data-net
+      - broker-net
+
+  matching-service-3:
+    container_name: Adopti_matching_3
     build: ../matching-service
     env_file:
       - ../matching-service/.env
@@ -349,10 +553,87 @@ services:
       - broker-net
 
   # ──────────────────────────────────────────────────────────────────────────
+  # LOAD BALANCERS — nginx stream TCP passthrough
+  # ──────────────────────────────────────────────────────────────────────────
+
+  # ---- Load Balancers dedicados (nginx stream / TCP passthrough) ----
+  pets-lb:
+    container_name: Adopti_pets_lb
+    image: nginx:1.27-alpine
+    volumes:
+      - ./lb/pets-lb.conf:/etc/nginx/nginx.conf:ro
+    expose:
+      - "8443"
+    depends_on:
+      pets-service-1:
+        condition: service_healthy
+      pets-service-2:
+        condition: service_healthy
+      pets-service-3:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "nc -z 127.0.0.1 8443 || exit 1"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+      start_period: 5s
+    restart: unless-stopped
+    networks:
+      - backend-net
+
+  matching-lb:
+    container_name: Adopti_matching_lb
+    image: nginx:1.27-alpine
+    volumes:
+      - ./lb/matching-lb.conf:/etc/nginx/nginx.conf:ro
+    expose:
+      - "8443"
+    depends_on:
+      matching-service-1:
+        condition: service_healthy
+      matching-service-2:
+        condition: service_healthy
+      matching-service-3:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "nc -z 127.0.0.1 8443 || exit 1"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+      start_period: 5s
+    restart: unless-stopped
+    networks:
+      - backend-net
+
+  notification-lb:
+    container_name: Adopti_notification_lb
+    image: nginx:1.27-alpine
+    volumes:
+      - ./lb/notification-lb.conf:/etc/nginx/nginx.conf:ro
+    expose:
+      - "8443"
+    depends_on:
+      notification-service-1:
+        condition: service_healthy
+      notification-service-2:
+        condition: service_healthy
+      notification-service-3:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "nc -z 127.0.0.1 8443 || exit 1"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+      start_period: 5s
+    restart: unless-stopped
+    networks:
+      - backend-net
+
+  # ──────────────────────────────────────────────────────────────────────────
   # PRESENTACIÓN Y GATEWAY
   # ──────────────────────────────────────────────────────────────────────────
 
-  # ---- API Gateway (Nginx) ----
+  # ---- API Gateway (Nginx) — nodo único ----
   gateway:
     container_name: Adopti_gateway
     image: nginx:1.27-alpine
@@ -365,13 +646,13 @@ services:
     expose:
       - "443"
     depends_on:
-      pets-service:
+      pets-lb:
+        condition: service_healthy
+      matching-lb:
+        condition: service_healthy
+      notification-lb:
         condition: service_healthy
       chat-service:
-        condition: service_healthy
-      matching-service:
-        condition: service_healthy
-      notification-service:
         condition: service_healthy
       media-service:
         condition: service_healthy
