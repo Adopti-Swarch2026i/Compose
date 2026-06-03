@@ -16,4 +16,8 @@ exec /usr/local/bin/docker-entrypoint.sh \
   -c ssl_key_file=/tmp/server.key \
   -c ssl_ca_file=/tmp/ca.crt \
   -c ssl_min_protocol_version=TLSv1.2 \
+  -c wal_level=replica \
+  -c max_wal_senders=5 \
+  -c wal_keep_size=64 \
+  -c hot_standby=on \
   "$@"

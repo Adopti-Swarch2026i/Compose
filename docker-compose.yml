@@ -20,6 +20,8 @@ volumes:
   postgres-notifications-data:
   prometheus-data:
   grafana-data:
+  postgres-replica-data:
+  postgres-notif-replica-data:
 
 services:
 
@@ -77,6 +79,64 @@ services:
       interval: 5s
       timeout: 5s
       retries: 10
+    restart: unless-stopped
+    networks:
+      - data-net
+
+  # ---- Replica read-only de PostgreSQL (para pets-service) ----
+  postgres-replica:
+    container_name: Adopti_pets-db-replica
+    image: postgres:15
+    environment:
+      REPLICA_PRIMARY_HOST: postgres
+      PGDATA: /var/lib/postgresql/data
+    entrypoint: ["/bin/bash", "/postgres-replica-entrypoint.sh"]
+    volumes:
+      - postgres-replica-data:/var/lib/postgresql/data
+      - ../security/postgres/pets-server.crt:/var/lib/postgresql/server.crt:ro
+      - ../security/postgres/pets-server.key:/var/lib/postgresql/server.key:ro
+      - ../security/postgres/ca.crt:/var/lib/postgresql/ca.crt:ro
+      - ./postgres-replica-entrypoint.sh:/postgres-replica-entrypoint.sh:ro
+    expose:
+      - "5432"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d petsdb"]
+      interval: 5s
+      timeout: 5s
+      retries: 15
+      start_period: 30s
+    restart: unless-stopped
+    networks:
+      - data-net
+
+  # ---- Replica read-only de PostgreSQL (para notification-service) ----
+  postgres-notif-replica:
+    container_name: Adopti_notifications-db-replica
+    image: postgres:15
+    environment:
+      REPLICA_PRIMARY_HOST: postgres-notifications
+      PGDATA: /var/lib/postgresql/data
+    entrypoint: ["/bin/bash", "/postgres-replica-entrypoint.sh"]
+    volumes:
+      - postgres-notif-replica-data:/var/lib/postgresql/data
+      - ../security/postgres-notifications/notif-server.crt:/var/lib/postgresql/server.crt:ro
+      - ../security/postgres-notifications/notif-server.key:/var/lib/postgresql/server.key:ro
+      - ../security/postgres-notifications/ca.crt:/var/lib/postgresql/ca.crt:ro
+      - ./postgres-replica-entrypoint.sh:/postgres-replica-entrypoint.sh:ro
+    expose:
+      - "5432"
+    depends_on:
+      postgres-notifications:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d notificationsdb"]
+      interval: 5s
+      timeout: 5s
+      retries: 15
+      start_period: 30s
     restart: unless-stopped
     networks:
       - data-net
@@ -182,6 +242,8 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
+      postgres-replica:
+        condition: service_healthy
       rabbitmq:
         condition: service_healthy
     healthcheck:
@@ -217,6 +279,8 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
+      postgres-replica:
+        condition: service_healthy
       rabbitmq:
         condition: service_healthy
     healthcheck:
@@ -251,6 +315,8 @@ services:
       - "8443"
     depends_on:
       postgres:
+        condition: service_healthy
+      postgres-replica:
         condition: service_healthy
       rabbitmq:
         condition: service_healthy
@@ -323,6 +389,8 @@ services:
     depends_on:
       postgres-notifications:
         condition: service_healthy
+      postgres-notif-replica:
+        condition: service_healthy
       rabbitmq:
         condition: service_healthy
     healthcheck:
@@ -358,6 +426,8 @@ services:
     depends_on:
       postgres-notifications:
         condition: service_healthy
+      postgres-notif-replica:
+        condition: service_healthy
       rabbitmq:
         condition: service_healthy
     healthcheck:
@@ -392,6 +462,8 @@ services:
       - "8443"
     depends_on:
       postgres-notifications:
+        condition: service_healthy
+      postgres-notif-replica:
         condition: service_healthy
       rabbitmq:
         condition: service_healthy
