@@ -42,7 +42,9 @@ CONTAINER_FOR_SERVICE() {
     local base="${svc%-service}"
     # Mapeo de excepciones: nombres de contenedor que no siguen el patron
     case "$base" in
-        notification) echo "Adopti_notifications" ;;
+        notification) echo "Adopti_notification_lb" ;;
+        pets) echo "Adopti_pets_lb" ;;
+        matching) echo "Adopti_matching_lb" ;;
         *) echo "Adopti_${base}" ;;
     esac
 }
@@ -89,7 +91,7 @@ log_skip() {
 
 # Verificar si contenedores estan corriendo
 check_containers_running() {
-    count=$(docker ps --format '{{.Names}}' | grep -cE "^Adopti_(chat|matching|media|notifications|pets|gateway)$" 2>/dev/null)
+    count=$(docker ps --format '{{.Names}}' | grep -cE "^Adopti_(chat|matching_lb|media|notification_lb|pets_lb|gateway)$" 2>/dev/null)
     count=${count:-0}
     [[ "$count" -gt 0 ]]
 }

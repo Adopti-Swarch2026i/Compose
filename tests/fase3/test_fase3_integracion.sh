@@ -49,7 +49,9 @@ CONTAINER_FOR_SERVICE() {
     local base="${svc%-service}"
     # Mapeo de excepciones: nombres de contenedor que no siguen el patron
     case "$base" in
-        notification) echo "Adopti_notifications" ;;
+        notification) echo "Adopti_notification_lb" ;;
+        pets) echo "Adopti_pets_lb" ;;
+        matching) echo "Adopti_matching_lb" ;;
         *) echo "Adopti_${base}" ;;
     esac
 }
@@ -347,10 +349,19 @@ assert_healthchecks() {
     local test_id="${1:-I009}"
     local containers=(
         "Adopti_chat"
-        "Adopti_matching"
+        "Adopti_matching_1"
+        "Adopti_matching_2"
+        "Adopti_matching_3"
+        "Adopti_matching_lb"
         "Adopti_media"
-        "Adopti_notifications"
-        "Adopti_pets"
+        "Adopti_notifications_1"
+        "Adopti_notifications_2"
+        "Adopti_notifications_3"
+        "Adopti_notification_lb"
+        "Adopti_pets_1"
+        "Adopti_pets_2"
+        "Adopti_pets_3"
+        "Adopti_pets_lb"
     )
 
     for c in "${containers[@]}"; do
@@ -445,7 +456,7 @@ if [[ ! -f "$GATEWAY_CERT" || ! -f "$GATEWAY_KEY" ]]; then
 fi
 
 # Verificar que hay contenedores corriendo
-RUNNING_CONTAINERS=$(docker ps --format '{{.Names}}' | grep -cE "^Adopti_(chat|matching|media|notifications|pets|gateway)$" 2>/dev/null)
+RUNNING_CONTAINERS=$(docker ps --format '{{.Names}}' | grep -cE "^Adopti_(chat|matching_lb|media|notification_lb|pets_lb|gateway)$" 2>/dev/null)
 RUNNING_CONTAINERS=${RUNNING_CONTAINERS:-0}
 if [[ "$RUNNING_CONTAINERS" -eq 0 ]]; then
     echo -e "${YELLOW}[WARN]${NC} No se detectaron contenedores Adopti corriendo"

@@ -22,6 +22,7 @@ volumes:
   grafana-data:
   postgres-replica-data:
   postgres-notif-replica-data:
+  rabbitmq-spare-data:
 
 services:
 
@@ -107,7 +108,7 @@ services:
       interval: 5s
       timeout: 5s
       retries: 15
-      start_period: 30s
+      start_period: 90s
     restart: unless-stopped
     networks:
       - data-net
@@ -136,30 +137,106 @@ services:
       interval: 5s
       timeout: 5s
       retries: 15
-      start_period: 30s
+      start_period: 90s
     restart: unless-stopped
     networks:
       - data-net
 
-  # ---- Message Broker (RabbitMQ) ----
+  # ---- Message Broker — Primary (RabbitMQ) ----
   rabbitmq:
     container_name: Adopti_broker
     image: rabbitmq:3.13-management
+    hostname: rabbitmq                          # Erlang node = rabbit@rabbitmq
     environment:
       RABBITMQ_DEFAULT_USER: ${RABBITMQ_USER:-adopti}
       RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASSWORD:?RABBITMQ_PASSWORD is required}
+      RABBITMQ_ERLANG_COOKIE: ${RABBITMQ_ERLANG_COOKIE:?RABBITMQ_ERLANG_COOKIE is required}
+      RABBITMQ_NODENAME: rabbit@rabbitmq
+      RABBITMQ_SERVER_ADDITIONAL_ERL_ARGS: "-proto_dist inet_tls -ssl_dist_optfile /etc/rabbitmq/inter_node_tls.config"
+      RABBITMQ_CTL_ERL_ARGS: "-proto_dist inet_tls -ssl_dist_optfile /etc/rabbitmq/inter_node_tls.config"
     expose:
-      - "5671"
-      - "15671"
+      - "5671"   # AMQPS client connections
+      - "15671"  # Management HTTPS
+      - "4369"   # epmd — Erlang Port Mapper (cluster discovery)
+      - "25672"  # Erlang inter-node distribution (TLS)
     volumes:
       - rabbitmq-data:/var/lib/rabbitmq
-      - ../security/rabbitmq/:/etc/rabbitmq/certs:ro
-      - ./rabbitmq/rabbitmq.conf:/etc/rabbitmq/rabbitmq.conf:ro
+      - ../security/rabbitmq/ca.crt:/etc/rabbitmq/certs/ca.crt:ro
+      - ../security/rabbitmq/rabbitmq.crt:/etc/rabbitmq/certs/rabbitmq.crt:ro
+      - ../security/rabbitmq/rabbitmq.key:/etc/rabbitmq/certs/rabbitmq.key:ro
+      - ./rabbitmq/rabbitmq-primary.conf:/etc/rabbitmq/rabbitmq.conf:ro
+      - ./rabbitmq/inter_node_tls.config:/etc/rabbitmq/inter_node_tls.config:ro
+      # Generic node.crt/node.key paths consumed by inter_node_tls.config
+      - ../security/rabbitmq/rabbitmq.crt:/etc/rabbitmq/certs/node.crt:ro
+      - ../security/rabbitmq/rabbitmq.key:/etc/rabbitmq/certs/node.key:ro
     healthcheck:
       test: [ "CMD", "rabbitmq-diagnostics", "ping" ]
       interval: 10s
-      timeout: 5s
-      retries: 10
+      timeout: 10s
+      retries: 15
+      start_period: 120s
+    restart: unless-stopped
+    networks:
+      - broker-net
+
+  # ---- Message Broker — Warm Spare (RabbitMQ) ----
+  rabbitmq-spare:
+    container_name: Adopti_broker_spare
+    image: rabbitmq:3.13-management
+    hostname: rabbitmq-spare                    # Erlang node = rabbit@rabbitmq-spare
+    environment:
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_USER:-adopti}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASSWORD:?RABBITMQ_PASSWORD is required}
+      RABBITMQ_ERLANG_COOKIE: ${RABBITMQ_ERLANG_COOKIE:?RABBITMQ_ERLANG_COOKIE is required}
+      RABBITMQ_NODENAME: rabbit@rabbitmq-spare
+      RABBITMQ_SERVER_ADDITIONAL_ERL_ARGS: "-proto_dist inet_tls -ssl_dist_optfile /etc/rabbitmq/inter_node_tls.config"
+      RABBITMQ_CTL_ERL_ARGS: "-proto_dist inet_tls -ssl_dist_optfile /etc/rabbitmq/inter_node_tls.config"
+    expose:
+      - "5671"
+      - "15671"
+      - "4369"
+      - "25672"
+    volumes:
+      - rabbitmq-spare-data:/var/lib/rabbitmq
+      - ../security/rabbitmq-spare/ca.crt:/etc/rabbitmq/certs/ca.crt:ro
+      - ../security/rabbitmq-spare/rabbitmq-spare.crt:/etc/rabbitmq/certs/rabbitmq-spare.crt:ro
+      - ../security/rabbitmq-spare/rabbitmq-spare.key:/etc/rabbitmq/certs/rabbitmq-spare.key:ro
+      - ./rabbitmq/rabbitmq-spare.conf:/etc/rabbitmq/rabbitmq.conf:ro
+      - ./rabbitmq/inter_node_tls.config:/etc/rabbitmq/inter_node_tls.config:ro
+      - ../security/rabbitmq-spare/rabbitmq-spare.crt:/etc/rabbitmq/certs/node.crt:ro
+      - ../security/rabbitmq-spare/rabbitmq-spare.key:/etc/rabbitmq/certs/node.key:ro
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+    healthcheck:
+      test: [ "CMD", "rabbitmq-diagnostics", "ping" ]
+      interval: 10s
+      timeout: 10s
+      retries: 15
+      start_period: 120s
+    restart: unless-stopped
+    networks:
+      - broker-net
+
+  # ---- Broker Load Balancer (NGINX stream — warm spare pattern) ----
+  rabbitmq-lb:
+    container_name: Adopti_broker_lb
+    image: nginx:1.27-alpine
+    volumes:
+      - ./lb/rabbitmq-lb.conf:/etc/nginx/nginx.conf:ro
+    expose:
+      - "5671"
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+      rabbitmq-spare:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "nc -z 127.0.0.1 5671 || exit 1"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+      start_period: 5s
     restart: unless-stopped
     networks:
       - broker-net
@@ -244,7 +321,7 @@ services:
         condition: service_healthy
       postgres-replica:
         condition: service_healthy
-      rabbitmq:
+      rabbitmq-lb:
         condition: service_healthy
     healthcheck:
       test: [ "CMD-SHELL", "curl -fk --cert /app/certs/healthcheck-client.crt --key /app/certs/healthcheck-client.key https://localhost:8443/health || exit 1" ]
@@ -281,7 +358,7 @@ services:
         condition: service_healthy
       postgres-replica:
         condition: service_healthy
-      rabbitmq:
+      rabbitmq-lb:
         condition: service_healthy
     healthcheck:
       test: [ "CMD-SHELL", "curl -fk --cert /app/certs/healthcheck-client.crt --key /app/certs/healthcheck-client.key https://localhost:8443/health || exit 1" ]
@@ -318,7 +395,7 @@ services:
         condition: service_healthy
       postgres-replica:
         condition: service_healthy
-      rabbitmq:
+      rabbitmq-lb:
         condition: service_healthy
     healthcheck:
       test: [ "CMD-SHELL", "curl -fk --cert /app/certs/healthcheck-client.crt --key /app/certs/healthcheck-client.key https://localhost:8443/health || exit 1" ]
@@ -354,7 +431,7 @@ services:
     expose:
       - "8443"
     depends_on:
-      rabbitmq:
+      rabbitmq-lb:
         condition: service_healthy
     healthcheck:
       test: [ "CMD-SHELL", "curl -fk --cert /app/certs/healthcheck-client.crt --key /app/certs/healthcheck-client.key -H 'Content-Type: application/json' -d '{\"query\":\"{__typename}\"}' https://localhost:8443/graphql | grep -q __typename || exit 1" ]
@@ -391,7 +468,7 @@ services:
         condition: service_healthy
       postgres-notif-replica:
         condition: service_healthy
-      rabbitmq:
+      rabbitmq-lb:
         condition: service_healthy
     healthcheck:
       test: [ "CMD-SHELL", "curl -fk --cert /app/certs/healthcheck-client.crt --key /app/certs/healthcheck-client.key https://127.0.0.1:8443/health || exit 1" ]
@@ -428,7 +505,7 @@ services:
         condition: service_healthy
       postgres-notif-replica:
         condition: service_healthy
-      rabbitmq:
+      rabbitmq-lb:
         condition: service_healthy
     healthcheck:
       test: [ "CMD-SHELL", "curl -fk --cert /app/certs/healthcheck-client.crt --key /app/certs/healthcheck-client.key https://127.0.0.1:8443/health || exit 1" ]
@@ -465,7 +542,7 @@ services:
         condition: service_healthy
       postgres-notif-replica:
         condition: service_healthy
-      rabbitmq:
+      rabbitmq-lb:
         condition: service_healthy
     healthcheck:
       test: [ "CMD-SHELL", "curl -fk --cert /app/certs/healthcheck-client.crt --key /app/certs/healthcheck-client.key https://127.0.0.1:8443/health || exit 1" ]
@@ -501,7 +578,7 @@ services:
     depends_on:
       elasticsearch:
         condition: service_healthy
-      rabbitmq:
+      rabbitmq-lb:
         condition: service_healthy
     healthcheck:
       test: [ "CMD-SHELL", "curl -fk --cert /app/certs/healthcheck-client.crt --key /app/certs/healthcheck-client.key https://localhost:8443/health || exit 1" ]
@@ -536,7 +613,7 @@ services:
     depends_on:
       elasticsearch:
         condition: service_healthy
-      rabbitmq:
+      rabbitmq-lb:
         condition: service_healthy
     healthcheck:
       test: [ "CMD-SHELL", "curl -fk --cert /app/certs/healthcheck-client.crt --key /app/certs/healthcheck-client.key https://localhost:8443/health || exit 1" ]
@@ -571,7 +648,7 @@ services:
     depends_on:
       elasticsearch:
         condition: service_healthy
-      rabbitmq:
+      rabbitmq-lb:
         condition: service_healthy
     healthcheck:
       test: [ "CMD-SHELL", "curl -fk --cert /app/certs/healthcheck-client.crt --key /app/certs/healthcheck-client.key https://localhost:8443/health || exit 1" ]
@@ -608,7 +685,7 @@ services:
     depends_on:
       redis:
         condition: service_healthy
-      rabbitmq:
+      rabbitmq-lb:
         condition: service_healthy
     healthcheck:
       # 127.0.0.1 explícito: en alpine, `localhost` resuelve a IPv6 (::1)

@@ -146,7 +146,7 @@ docker exec Adopti_cache-queue redis-cli FLUSHALL >/dev/null 2>&1 || true
 
 echo "[test] Reiniciando pets-service para limpiar singleflight/cache en memoria ..."
 cd "$COMPOSE_DIR"
-docker compose restart pets-service >/dev/null 2>&1
+docker compose restart pets-service-1 pets-service-2 pets-service-3 >/dev/null 2>&1
 
 echo "[test] Esperando 20s a que pets-service vuelva a estar healthy ..."
 sleep 20
