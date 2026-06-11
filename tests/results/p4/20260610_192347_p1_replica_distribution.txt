@@ -1,0 +1,13 @@
+P1 replica distribution
+Captured at: 2026-06-10T19:24:18-05:00
+Since: 2026-06-10T19:23:47-05:00
+
+Nginx stream upstream distribution (Adopti_pets_lb):
+    407 172.26.0.9:8443
+    405 172.26.0.7:8443
+    392 172.26.0.15:8443
+
+Pets-service access log fallback:
+Adopti_pets_1 403
+Adopti_pets_2 392
+Adopti_pets_3 406

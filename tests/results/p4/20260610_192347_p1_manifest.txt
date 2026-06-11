@@ -1,0 +1,17 @@
+P1 Load Balancer evidence manifest
+Timestamp: 20260610_192347
+Base URL: https://localhost
+Target replica stopped for exclusion test: Adopti_pets_2
+Expected scenario: 300 VUs / 1200 requests / 30s / p95 < 2s / 0% errors
+
+- /home/blend-pc-juan/Documentos/Proyecto Personal/AdoptiEntregaFInal/AdoptiFinal/Compose/tests/results/p4/20260610_192347_p1_load_balancer_exit_code.txt
+- /home/blend-pc-juan/Documentos/Proyecto Personal/AdoptiEntregaFInal/AdoptiFinal/Compose/tests/results/p4/20260610_192347_p1_load_balancer_k6.txt
+- /home/blend-pc-juan/Documentos/Proyecto Personal/AdoptiEntregaFInal/AdoptiFinal/Compose/tests/results/p4/20260610_192347_p1_load_balancer_raw.json
+- /home/blend-pc-juan/Documentos/Proyecto Personal/AdoptiEntregaFInal/AdoptiFinal/Compose/tests/results/p4/20260610_192347_p1_load_balancer_summary.json
+- /home/blend-pc-juan/Documentos/Proyecto Personal/AdoptiEntregaFInal/AdoptiFinal/Compose/tests/results/p4/20260610_192347_p1_manifest.txt
+- /home/blend-pc-juan/Documentos/Proyecto Personal/AdoptiEntregaFInal/AdoptiFinal/Compose/tests/results/p4/20260610_192347_p1_replica_distribution.txt
+- /home/blend-pc-juan/Documentos/Proyecto Personal/AdoptiEntregaFInal/AdoptiFinal/Compose/tests/results/p4/20260610_192347_p1_replica_down_exclusion.txt
+- /home/blend-pc-juan/Documentos/Proyecto Personal/AdoptiEntregaFInal/AdoptiFinal/Compose/tests/results/p4/20260610_192347_p1_replica_down_exclusion_exit_code.txt
+- /home/blend-pc-juan/Documentos/Proyecto Personal/AdoptiEntregaFInal/AdoptiFinal/Compose/tests/results/p4/20260610_192347_p1_replica_down_exclusion_k6.txt
+- /home/blend-pc-juan/Documentos/Proyecto Personal/AdoptiEntregaFInal/AdoptiFinal/Compose/tests/results/p4/20260610_192347_p1_replica_down_exclusion_raw.json
+- /home/blend-pc-juan/Documentos/Proyecto Personal/AdoptiEntregaFInal/AdoptiFinal/Compose/tests/results/p4/20260610_192347_p1_replica_down_exclusion_summary.json

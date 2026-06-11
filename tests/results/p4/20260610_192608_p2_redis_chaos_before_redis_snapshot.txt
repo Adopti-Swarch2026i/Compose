@@ -1,0 +1,15 @@
+Redis snapshot: p2_redis_chaos_before
+Captured at: 2026-06-10T19:28:43-05:00
+
+PING:
+PONG
+
+pets:* key count:
+2
+
+INFO stats:
+total_commands_processed:34181
+expired_keys:29
+evicted_keys:0
+keyspace_hits:6782
+keyspace_misses:41

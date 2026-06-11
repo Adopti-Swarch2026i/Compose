@@ -2,6 +2,8 @@
 
 # k6 raw JSON outputs (multi-MB, regenerated on every run)
 tests/results/*.json
+tests/results/p4/*_raw.json
+tests/results/p4/*.log
 
 # Runtime log files generados por docker compose logs
 logs_*.txt
@@ -11,3 +13,4 @@ logs_*.txt
 tests/results/*.log
 tests/results/*.txt
 tests/results/charts/
+tests/results/p4/charts/

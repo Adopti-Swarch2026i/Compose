@@ -1,0 +1,128 @@
+
+          /\      |‾‾| /‾‾/   /‾‾/
+     /\  /  \     |  |/  /   /  /
+    /  \/    \    |     (   /   ‾‾\
+   /          \   |  |\  \ |  (‾)  |
+  / __________ \  |__| \__\ \_____/ .io
+
+     execution: local
+        script: /home/blend-pc-juan/Documentos/Proyecto Personal/AdoptiEntregaFInal/AdoptiFinal/Compose/tests/perf/pets_load_test.js
+        output: json (/home/blend-pc-juan/Documentos/Proyecto Personal/AdoptiEntregaFInal/AdoptiFinal/Compose/tests/results/p4/20260610_192347_p1_load_balancer_raw.json)
+
+     scenarios: (100.00%) 1 scenario, 300 max VUs, 1m0s max duration (incl. graceful stop):
+              * p1_constant_arrival: 40.00 iterations/s for 30s (maxVUs: 300, gracefulStop: 30s)
+
+
+running (0m01.0s), 001/300 VUs, 39 complete and 0 interrupted iterations
+p1_constant_arrival   [   3% ] 001/300 VUs  01.0s/30s  40.00 iters/s
+
+running (0m02.0s), 001/300 VUs, 79 complete and 0 interrupted iterations
+p1_constant_arrival   [   7% ] 001/300 VUs  02.0s/30s  40.00 iters/s
+
+running (0m03.0s), 001/300 VUs, 119 complete and 0 interrupted iterations
+p1_constant_arrival   [  10% ] 001/300 VUs  03.0s/30s  40.00 iters/s
+
+running (0m04.0s), 001/300 VUs, 159 complete and 0 interrupted iterations
+p1_constant_arrival   [  13% ] 001/300 VUs  04.0s/30s  40.00 iters/s
+
+running (0m05.0s), 001/300 VUs, 199 complete and 0 interrupted iterations
+p1_constant_arrival   [  17% ] 001/300 VUs  05.0s/30s  40.00 iters/s
+
+running (0m06.0s), 001/300 VUs, 239 complete and 0 interrupted iterations
+p1_constant_arrival   [  20% ] 001/300 VUs  06.0s/30s  40.00 iters/s
+
+running (0m07.0s), 001/300 VUs, 279 complete and 0 interrupted iterations
+p1_constant_arrival   [  23% ] 001/300 VUs  07.0s/30s  40.00 iters/s
+
+running (0m08.0s), 000/300 VUs, 320 complete and 0 interrupted iterations
+p1_constant_arrival   [  27% ] 000/300 VUs  08.0s/30s  40.00 iters/s
+
+running (0m09.0s), 000/300 VUs, 360 complete and 0 interrupted iterations
+p1_constant_arrival   [  30% ] 000/300 VUs  09.0s/30s  40.00 iters/s
+
+running (0m10.0s), 000/300 VUs, 400 complete and 0 interrupted iterations
+p1_constant_arrival   [  33% ] 000/300 VUs  10.0s/30s  40.00 iters/s
+
+running (0m11.0s), 001/300 VUs, 439 complete and 0 interrupted iterations
+p1_constant_arrival   [  37% ] 001/300 VUs  11.0s/30s  40.00 iters/s
+
+running (0m12.0s), 001/300 VUs, 479 complete and 0 interrupted iterations
+p1_constant_arrival   [  40% ] 001/300 VUs  12.0s/30s  40.00 iters/s
+
+running (0m13.0s), 001/300 VUs, 519 complete and 0 interrupted iterations
+p1_constant_arrival   [  43% ] 001/300 VUs  13.0s/30s  40.00 iters/s
+
+running (0m14.0s), 001/300 VUs, 559 complete and 0 interrupted iterations
+p1_constant_arrival   [  47% ] 001/300 VUs  14.0s/30s  40.00 iters/s
+
+running (0m15.0s), 001/300 VUs, 599 complete and 0 interrupted iterations
+p1_constant_arrival   [  50% ] 001/300 VUs  15.0s/30s  40.00 iters/s
+
+running (0m16.0s), 001/300 VUs, 639 complete and 0 interrupted iterations
+p1_constant_arrival   [  53% ] 001/300 VUs  16.0s/30s  40.00 iters/s
+
+running (0m17.0s), 001/300 VUs, 679 complete and 0 interrupted iterations
+p1_constant_arrival   [  57% ] 001/300 VUs  17.0s/30s  40.00 iters/s
+
+running (0m18.0s), 000/300 VUs, 720 complete and 0 interrupted iterations
+p1_constant_arrival   [  60% ] 000/300 VUs  18.0s/30s  40.00 iters/s
+
+running (0m19.0s), 001/300 VUs, 759 complete and 0 interrupted iterations
+p1_constant_arrival   [  63% ] 001/300 VUs  19.0s/30s  40.00 iters/s
+
+running (0m20.0s), 000/300 VUs, 800 complete and 0 interrupted iterations
+p1_constant_arrival   [  67% ] 000/300 VUs  20.0s/30s  40.00 iters/s
+
+running (0m21.0s), 000/300 VUs, 840 complete and 0 interrupted iterations
+p1_constant_arrival   [  70% ] 000/300 VUs  21.0s/30s  40.00 iters/s
+
+running (0m22.0s), 001/300 VUs, 879 complete and 0 interrupted iterations
+p1_constant_arrival   [  73% ] 001/300 VUs  22.0s/30s  40.00 iters/s
+
+running (0m23.0s), 001/300 VUs, 919 complete and 0 interrupted iterations
+p1_constant_arrival   [  77% ] 001/300 VUs  23.0s/30s  40.00 iters/s
+
+running (0m24.0s), 001/300 VUs, 959 complete and 0 interrupted iterations
+p1_constant_arrival   [  80% ] 001/300 VUs  24.0s/30s  40.00 iters/s
+
+running (0m25.0s), 000/300 VUs, 1000 complete and 0 interrupted iterations
+p1_constant_arrival   [  83% ] 000/300 VUs  25.0s/30s  40.00 iters/s
+
+running (0m26.0s), 001/300 VUs, 1039 complete and 0 interrupted iterations
+p1_constant_arrival   [  87% ] 001/300 VUs  26.0s/30s  40.00 iters/s
+
+running (0m27.0s), 001/300 VUs, 1079 complete and 0 interrupted iterations
+p1_constant_arrival   [  90% ] 001/300 VUs  27.0s/30s  40.00 iters/s
+
+running (0m28.0s), 001/300 VUs, 1119 complete and 0 interrupted iterations
+p1_constant_arrival   [  93% ] 001/300 VUs  28.0s/30s  40.00 iters/s
+
+running (0m29.0s), 001/300 VUs, 1159 complete and 0 interrupted iterations
+p1_constant_arrival   [  97% ] 001/300 VUs  29.0s/30s  40.00 iters/s
+
+running (0m30.0s), 001/300 VUs, 1199 complete and 0 interrupted iterations
+p1_constant_arrival   [ 100% ] 001/300 VUs  30.0s/30s  40.00 iters/s
+
+     ✓ status 200
+
+   ✓ checks.........................: 100.00% ✓ 1201      ✗ 0
+     data_received..................: 1.2 MB  38 kB/s
+     data_sent......................: 361 kB  12 kB/s
+     http_req_blocked...............: avg=922.63µs min=6.07µs  med=9.01µs  max=16.15ms  p(90)=3.64ms   p(95)=3.83ms
+     http_req_connecting............: avg=43.81µs  min=0s      med=0s      max=12.97ms  p(90)=131.23µs p(95)=146.17µs
+   ✓ http_req_duration..............: avg=11.34ms  min=9.72ms  med=11.12ms max=61.13ms  p(90)=12.18ms  p(95)=12.83ms
+       { expected_response:true }...: avg=11.34ms  min=9.72ms  med=11.12ms max=61.13ms  p(90)=12.18ms  p(95)=12.83ms
+   ✓ http_req_failed................: 0.00%   ✓ 0         ✗ 1201
+     http_req_receiving.............: avg=69.94µs  min=44.42µs med=67.67µs max=233.69µs p(90)=83.94µs  p(95)=92.54µs
+     http_req_sending...............: avg=29.75µs  min=16.13µs med=25.28µs max=314.35µs p(90)=44.69µs  p(95)=50µs
+     http_req_tls_handshaking.......: avg=848.94µs min=0s      med=0s      max=4.62ms   p(90)=3.42ms   p(95)=3.59ms
+     http_req_waiting...............: avg=11.24ms  min=9.62ms  med=11.02ms max=61.06ms  p(90)=12.08ms  p(95)=12.72ms
+   ✓ http_reqs......................: 1201    40.018223/s
+     iteration_duration.............: avg=12.47ms  min=10ms    med=11.65ms max=61.27ms  p(90)=14.99ms  p(95)=15.68ms
+     iterations.....................: 1201    40.018223/s
+     vus............................: 1       min=0       max=1
+     vus_max........................: 300     min=300     max=300
+
+
+running (0m30.0s), 000/300 VUs, 1201 complete and 0 interrupted iterations
+p1_constant_arrival ✓ [ 100% ] 000/300 VUs  30s  40.00 iters/s

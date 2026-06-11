@@ -1,0 +1,15 @@
+Redis snapshot: p2_nocache_before
+Captured at: 2026-06-10T19:26:35-05:00
+
+PING:
+PONG
+
+pets:* key count:
+0
+
+INFO stats:
+total_commands_processed:26076
+expired_keys:22
+evicted_keys:0
+keyspace_hits:5176
+keyspace_misses:31
