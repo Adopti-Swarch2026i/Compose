@@ -337,6 +337,8 @@ services:
       SERVICE_ID: pets-service-1
       SERVICE_HOST: pets-service-1
       SERVICE_PORT: "8443"
+      REDIS_URL: ${PETS_REDIS_URL:-redis://redis:6379/0}
+      CACHE_ENABLED: ${PETS_CACHE_ENABLED:-true}
     volumes:
       - ../pets-service/firebase-config:/firebase-config
       - ../security/pets-service/pets-service.crt:/app/certs/server.crt:ro
@@ -350,6 +352,8 @@ services:
       postgres:
         condition: service_healthy
       postgres-replica:
+        condition: service_healthy
+      redis:
         condition: service_healthy
       rabbitmq-lb:
         condition: service_healthy
@@ -382,6 +386,8 @@ services:
       SERVICE_ID: pets-service-2
       SERVICE_HOST: pets-service-2
       SERVICE_PORT: "8443"
+      REDIS_URL: ${PETS_REDIS_URL:-redis://redis:6379/0}
+      CACHE_ENABLED: ${PETS_CACHE_ENABLED:-true}
     volumes:
       - ../pets-service/firebase-config:/firebase-config
       - ../security/pets-service/pets-service.crt:/app/certs/server.crt:ro
@@ -395,6 +401,8 @@ services:
       postgres:
         condition: service_healthy
       postgres-replica:
+        condition: service_healthy
+      redis:
         condition: service_healthy
       rabbitmq-lb:
         condition: service_healthy
@@ -427,6 +435,8 @@ services:
       SERVICE_ID: pets-service-3
       SERVICE_HOST: pets-service-3
       SERVICE_PORT: "8443"
+      REDIS_URL: ${PETS_REDIS_URL:-redis://redis:6379/0}
+      CACHE_ENABLED: ${PETS_CACHE_ENABLED:-true}
     volumes:
       - ../pets-service/firebase-config:/firebase-config
       - ../security/pets-service/pets-service.crt:/app/certs/server.crt:ro
@@ -440,6 +450,8 @@ services:
       postgres:
         condition: service_healthy
       postgres-replica:
+        condition: service_healthy
+      redis:
         condition: service_healthy
       rabbitmq-lb:
         condition: service_healthy
